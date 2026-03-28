@@ -13,6 +13,7 @@ import windowIconAsset from "../../assets/desktop/icon.png?asset";
 
 import { config } from "./config";
 import { updateTrayMenu } from "./tray";
+import { KeyboardHook } from "./keyboardHook";
 
 // global reference to main window
 export let mainWindow: BrowserWindow;
@@ -114,6 +115,8 @@ export function createMainWindow() {
   mainWindow.on("moved", generateState);
   mainWindow.on("resized", generateState);
 
+  mainWindow.webContents.openDevTools({mode: 'undocked'});
+
   // rebind zoom controls to be more sensible
   mainWindow.webContents.on("before-input-event", (event, input) => {
     if (input.control && (input.key === "=" || input.key === "+")) {
@@ -198,6 +201,11 @@ export function createMainWindow() {
 
   // let i = 0;
   // setInterval(() => setBadgeCount((++i % 30) + 1), 1000);
+
+  app.on('before-quit', () => {
+    KeyboardHook.cleanup();
+  });
+  KeyboardHook.setup();
 }
 
 /**

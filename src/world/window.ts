@@ -15,4 +15,9 @@ contextBridge.exposeInMainWorld("native", {
   close: () => ipcRenderer.send("close"),
 
   setBadgeCount: (count: number) => ipcRenderer.send("setBadgeCount", count),
+
+  onKeyInput: (callback: (key: {key: string, vkCode: number}, state: 'up' | 'down') => void) => {
+    ipcRenderer.on("keyInput", (_, key, state) => callback(key, state));
+    ipcRenderer.send("onKeyInput");
+  }
 });

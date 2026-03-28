@@ -5,7 +5,7 @@
   "main": ".vite/build/main.js",
   "repository": "stoatchat/desktop",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "electron-forge start -- --force-server=http://localhost:5173",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
