@@ -25,4 +25,6 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: pnpm run package
+        run: |
+          ./scripts/download-kbhook.sh
+          pnpm run package

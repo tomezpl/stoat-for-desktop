@@ -68,6 +68,7 @@ jobs:
 
       - name: Publish
         run: |
+          ./scripts/download-kbhook.sh
           pnpm run publish
         env:
           PLATFORM: ${{ matrix.os }}

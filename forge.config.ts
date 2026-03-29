@@ -136,8 +136,8 @@ const config: ForgeConfig = {
     executableName: STRINGS.execName,
     icon: `${ASSET_DIR}/icon`,
     extraResource: [
-      './deps/kbhook_app.exe',
-      './deps/kbhook_hook.dll'
+      './stoat-native-deps/kbhook_app.exe',
+      './stoat-native-deps/kbhook_hook.dll'
     ]
     // extraResource: [
     //   // include all the asset files

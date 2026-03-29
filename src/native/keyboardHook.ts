@@ -134,7 +134,7 @@ export class KeyboardHook extends EventEmitter<EventNameParamMap<KeyboardEvents>
       return;
     }
 
-    const kbHookPath = path.resolve(app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'deps'), KEYBOARD_HOOK_PATH);
+    const kbHookPath = path.resolve(app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'stoat-native-deps'), KEYBOARD_HOOK_PATH);
     this._osKeyboardHook = spawn(kbHookPath, [`${this.serverPort}`]);
     this._osKeyboardHook.stdout.on('data', (data: Buffer) => {
       console.log(data.toString('utf8'));
