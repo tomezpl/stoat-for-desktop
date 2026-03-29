@@ -3,6 +3,7 @@ import {EventEmitter} from 'node:events';
 import {Socket as UDPSocket, createSocket as createUDPSocket} from 'node:dgram';
 import {ChildProcess, spawn} from 'node:child_process';
 import * as path from "node:path";
+import winkeymap from '@tomzydev/winkeymap/dist/index.json';
 
 export interface KeyboardEvents {
   keyUp(key: string, vkCode: number): void;
@@ -69,29 +70,62 @@ export class KeyboardHook extends EventEmitter<EventNameParamMap<KeyboardEvents>
     return this._serverPort!;
   }
 
-  private _ensureUdpServer() {
+  private _ensureUdpServer(maxAttempts = 5) {
     if(this._server) {
       return;
     }
 
-    this._server = createUDPSocket('udp4', (msg) => {
+    function onMessage(this: KeyboardHook, msg: Buffer) {
       /*
-        struct {
-          uint8_t vkCode{0xFF};
-          bool up{true};
-        } buffer;
-       */
-      console.log('Got message', msg);
+         struct {
+           uint8_t vkCode{0xFF};
+           bool up{true};
+         } buffer;
+        */
       const vkCode = msg.readUint8();
       const state = !!msg.readUint8(1);
 
       const ev = state ? 'keyUp' : 'keyDown';
-      this.emit(ev, String(vkCode), vkCode);
-    });
+      this.emit(ev, KeyboardHook.getKeyName(vkCode), vkCode);
+    }
 
-    this._serverPort = KeyboardHook._findSafeUDPPort();
+    for(let attempt = 0; !this._server && attempt < maxAttempts; attempt++) {
+      try {
+        const {safePortRange} = KeyboardHook._getSafeUDPPortRange();
+        // If there is an error and we need to re-attempt creating the server, randomise the port as it's possible we're clashing with another service
+        const [server, serverPort] = KeyboardHook._createUdpServer(onMessage.bind(this), attempt ? Math.round(Math.random() * safePortRange) : 0);
+
+        this._serverPort = serverPort;
+        this._server = server;
+      } catch {
+        console.log(`KeyboardHook retrying createUdpServer() (failed attempt ${attempt + 1})`);
+      }
+    }
+
     console.log('KeyboardHook server listening on port', this._serverPort);
-    this._server.bind(this._serverPort, 'localhost')
+  }
+
+  public static getKeyName(vkCode: number) {
+    const hexFallback = `0x${vkCode.toString(16)}` as const;
+
+    if(vkCode in winkeymap) {
+      return winkeymap[vkCode as unknown as keyof typeof winkeymap];
+    }
+
+    return hexFallback;
+  }
+
+  private static _createUdpServer(callback: (msg: Buffer) => void, portOffset = 0) {
+    const server = createUDPSocket('udp4', callback);
+    const serverPort = KeyboardHook._findSafeUDPPort(portOffset);
+
+    try {
+      server.bind(serverPort, 'localhost');
+      return [server, serverPort] as const;
+    } catch (err) {
+      console.error(`KeyboardHook could not create a UDP server on port ${serverPort}:`, err);
+      throw err;
+    }
   }
 
   private _osKeyboardHook: ChildProcess | null = null;
@@ -115,10 +149,15 @@ export class KeyboardHook extends EventEmitter<EventNameParamMap<KeyboardEvents>
     }
   }
 
-  private static _findSafeUDPPort() {
+  private static _getSafeUDPPortRange() {
     const [safePortMin, safePortMax] = [0xC000, 0xFFFF] as const;
     const safePortRange = Math.abs(safePortMax - safePortMin) + 1;
-    const wrappedPid = (process.pid + Date.now()) % safePortRange;
+    return {safePortMax, safePortMin, safePortRange};
+  }
+
+  private static _findSafeUDPPort(portOffset = 0) {
+    const {safePortRange, safePortMax, safePortMin} = this._getSafeUDPPortRange();
+    const wrappedPid = (process.pid + Date.now() + portOffset) % safePortRange;
     return Math.min(safePortMin, safePortMax) + wrappedPid;
   }
 
