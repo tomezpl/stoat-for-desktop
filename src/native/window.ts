@@ -115,7 +115,13 @@ export function createMainWindow() {
   mainWindow.on("moved", generateState);
   mainWindow.on("resized", generateState);
 
-  mainWindow.webContents.openDevTools({mode: 'undocked'});
+  // WM_KEYDOWN
+  mainWindow.hookWindowMessage(0x0100, (wParam, lParam) => {
+    // F12
+    if(wParam.readUint8() === 0x7B) {
+      mainWindow.webContents.openDevTools({mode: 'undocked'});
+    }
+  });
 
   // rebind zoom controls to be more sensible
   mainWindow.webContents.on("before-input-event", (event, input) => {

@@ -135,6 +135,10 @@ const config: ForgeConfig = {
     name: STRINGS.name,
     executableName: STRINGS.execName,
     icon: `${ASSET_DIR}/icon`,
+    extraResource: [
+      './deps/kbhook_app.exe',
+      './deps/kbhook_hook.dll'
+    ]
     // extraResource: [
     //   // include all the asset files
     //   ...globSync(ASSET_DIR + "/**/*"),
